@@ -1,0 +1,14 @@
+[
+	{
+		"url": "/public/*",
+		"static": "assets/*"
+	},
+	{
+		"url": "/",
+		"page": "index"
+	},
+	{
+		"url": "/time",
+		"controller": { "file": "datime", "function": "time" }
+	}
+]

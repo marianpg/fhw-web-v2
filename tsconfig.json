@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+		"experimentalDecorators": true,
+        "module": "commonjs",
+        "target": "es2015",
+		"outDir": "./dist",
+		"skipLibCheck": true,
+		"lib": ["es2020.string", "es2019.array"]
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "exclude": [
+        "src/**/*.spec.ts"
+	]
+}
