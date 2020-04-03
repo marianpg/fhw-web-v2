@@ -1,5 +1,6 @@
 'use strict'
 
+import { RoutingConfig } from '../../public/config'
 import { ControllerRoute } from '../../public/route'
 import { ControllerFunction, ControllerResult, TextResult, JsonResult, RedirectResult, PageResult, FragmentResult } from '../../public/controller'
 import { GlobalData } from '../../public/global'
@@ -9,7 +10,6 @@ import { Database } from '../../public/database'
 
 import { isDefined, isFunction } from '../helper'
 
-import { Config } from '..'
 import { Logging } from '../logging'
 import { FileUtils, ModuleLoader, DynamicModule } from '../filesystem-utils'
 
@@ -47,7 +47,7 @@ export class ControllerService {
 	private allController: DynamicModule<ControllerFunction>[]
 
 	constructor(
-		private config: Config,
+		private config: RoutingConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils
 	) {

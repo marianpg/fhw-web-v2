@@ -1,5 +1,6 @@
 'use strict'
 
+import { TemplatingConfig } from '../../public/config'
 import { GlobalData } from '../../public/global'
 import { RequestData } from '../../public/request'
 import { SessionData } from '../../public/session'
@@ -9,7 +10,6 @@ import Handlebars = require('handlebars') //see https://stackoverflow.com/a/3452
 import promisedHandlebars = require('promised-handlebars')
 
 import { isDefined } from '../helper'
-import { Config } from './config'
 import { Logging } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 
@@ -20,9 +20,8 @@ import { Validation } from '../validator'
 import { ErrorBannerTemplate } from './templates/error-banner-template.hbs'
 import { AnyErrorTemplate } from './templates/any-error-template.hbs'
 import { ValidationErrorTemplate } from './templates/validation-error-template.hbs'
+import { isException, RouteException } from '../exception'
 
-
-export { Config, parseConfig } from './config'
 
 export enum RenderType {
 	PAGE = 'PAGE',
@@ -34,11 +33,10 @@ export class RenderEngine {
 	private helpers: HelpersRegistration
 
 	constructor(
-		private config: Config,
+		private config: TemplatingConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils
 	) {
-		this.logging = this.logging.modify('handlebars')
 		this.helpers = new HelpersRegistration(this.config, this.logging, this.fileUtils)
 	}
 
@@ -53,20 +51,33 @@ export class RenderEngine {
 		this.helpers.registerCustomHelpers(this.hbs)
 	}
 
-	private async readFile(pagePath: string): Promise<string> {
-		const fullPath = this.fileUtils.fullPath(pagePath)
-
-		const acceptedExtensions = await Promise.all(this.config.validExtensions.map(
+	private async findExtension(fullPath: string): Promise<string> {
+		const acceptedExtensions = await Promise.all(this.config.allowedExtensions.map(
 			async (ext) => {
 				return await this.fileUtils.exist(`${fullPath}.${ext}`)
 			}
 		))
 		if (acceptedExtensions.indexOf(true) === -1) {
-			throw new Error(`Can not find file on filesystem with any of the valid file extensions(${this.config.validExtensions}): ${fullPath}`)
+			throw new Error(`Can not find file on filesystem with any of the valid file extensions(${this.config.allowedExtensions}): ${fullPath}`)
 		}
-		const extension = this.config.validExtensions[acceptedExtensions.indexOf(true)]
-		const filepath = `${fullPath}.${extension}`
+		const extension = this.config.allowedExtensions[acceptedExtensions.indexOf(true)]
 
+		return extension
+	}
+
+	private async readFile(pagePath: string): Promise<string> {
+		const path = this.fileUtils.fullPath(pagePath)
+		const fullPath = await this.fileUtils.isDirectory(path)
+			? this.fileUtils.join(path, 'index')
+			: path
+		
+		const filepath = this.fileUtils.hasExtension(fullPath)
+			? fullPath
+			: `${fullPath}.${await this.findExtension(fullPath)}`
+
+		if (!await this.fileUtils.fileExist(filepath)) {
+			throw RouteException.NotFound(`Can not find requested file: ${filepath}`)
+		}
 		const file = await this.fileUtils.readFile(filepath)
 
 		return file

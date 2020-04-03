@@ -1,81 +1,53 @@
 'use strict'
 
-import { isDefined } from '../helper'
-import { Config } from './config'
-
-
-export { Config, parseConfig } from './config'
+import { LoggingTypes } from '../../public/config'
 
 
 const colors = require('colors')
 
-colors.setTheme({
-	debug: 'blue',
+const themeConfig: Record<LoggingTypes, string> = {
 	info: 'green',
+	data: 'grey',
 	warn: 'yellow',
 	error: 'red',
-	data: 'grey'
-})
-
-type LogType = 'debug' | 'info' | 'warn' | 'error' | 'data'
+	debug: 'blue'
+}
+colors.setTheme(themeConfig)
 
 
 export class Logging {
-	private subtag: string
 
 	constructor(
 		private tag: string,
-		private config: Config
+		private shouldLog: boolean,
+		private loggingActive: LoggingTypes[]
 	) { }
 
-	protected log(type: LogType, ...args: any[]) {
-		let tag = `[${this.tag}`
-		if (isDefined(this.subtag)) {
-			tag = `${tag}: ${this.subtag}]`
-		} else {
-			tag = `${tag}]`
-		}
-		console.log(colors[type](tag), ...args)
-	}
-
-	setSubtag(subtag: string): void {
-		this.subtag = subtag
-	}
-
-	modify(tag: string): Logging {
-		const logging = new Logging(this.tag, this.config)
-		logging.setSubtag(tag)
-		return logging
-	}
-
-	debug(...args: any[]): void {
-		if (this.config.debug) {
-			this.log('debug', ...args)
+	protected log(type: LoggingTypes, ...args: any[]) {
+		if (this.loggingActive.includes(type) && this.shouldLog) {
+			let tag = `[${this.tag}]`
+			console.log(colors[type](tag), ...args)
 		}
 	}
 
 	info(...args: any[]): void {
-		if (this.config.info) {
-			this.log('info', ...args)
-		}
-	}
-
-	warn(...args: any[]): void {
-		if (this.config.warn) {
-			this.log('warn', ...args)
-		}
-	}
-
-	error(...args: any[]): void {
-		if (this.config.error) {
-			this.log('error', ...args)
-		}
+		this.log(LoggingTypes.INFO, ...args)
 	}
 
 	data(...args: any[]): void {
-		if (this.config.data) {
-			this.log('data', ...args)
-		}
+		this.log(LoggingTypes.DATA, ...args)
+	}
+
+	warn(...args: any[]): void {
+		this.log(LoggingTypes.WARN, ...args)
+	}
+
+	error(...args: any[]): void {
+		this.log(LoggingTypes.ERROR, ...args)
+	}
+
+	debug(...args: any[]): void {
+		this.log(LoggingTypes.DEBUG, ...args)
 	}
 }
 
@@ -83,19 +55,17 @@ export class Logging {
 export class FakeLogging extends Logging {
 	constructor() {
 		const tag = ''
-		const config: Config = {
-			data: false,
-			debug: false,
-			error: false,
-			info: false,
-			warn: false
-		}
-		super(tag, config)
+		const shouldLog = false
+		super(tag, shouldLog, [])
 	 }
+}
 
-	protected log(type: LogType, ...args: any[]) {	}
+export class LoggingService {
+	constructor(
+		private loggingActive: LoggingTypes[]
+	) { }
 
-	modify(tag: string): Logging {
-		return this
+	create(tag: string, shouldLog: boolean): Logging {
+		return new Logging(tag, shouldLog, this.loggingActive)
 	}
 }

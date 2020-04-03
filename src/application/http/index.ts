@@ -1,36 +1,37 @@
 'use strict'
 
+import { Config } from '../../public/config'
+
 import { Express } from 'express'
 import express = require('express') //see https://stackoverflow.com/a/34520891
 import { Server as HttpServer } from 'http'
 import cookieParser = require('cookie-parser') //and again...
-import morganBody = require('morgan-body') //and again...
 
 import { isDefined } from '../helper'
-import { Config } from './config'
-import { Logging } from '../logging'
+import { Logging, LoggingService } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 
 import { Router } from './router'
 import { ResponseService } from '../response-service'
 
-export { Config, parseConfig } from './config'
 export { parseRequest } from './request'
 export { Response, ResponseEmpty, ResponseHtml, ResponseJson, ResponseRedirect, ResponseStatic, ResponseText } from './response'
 export { parseMethod } from './method'
+export { SessionService } from './session-service'
 
 
 export class Server {
+	private logging: Logging
 	private app: Express
 	private httpServer: HttpServer
 
 	constructor(
 		private config: Config,
-		private logging: Logging,
+		private logService: LoggingService,
 		private fileUtils: FileUtils,
 		private responseService: ResponseService
 	) {
-		this.logging = this.logging.modify('server')
+		this.logging = this.logService.create('server', this.config.server.logging)
 	}
 
 	async build(): Promise<void> {
@@ -40,16 +41,16 @@ export class Server {
 		this.app.use(cookieParser())
 
 		const router = new Router(
-			this.config, this.logging, this.fileUtils,
+			this.config,
+			this.logService,
+			this.fileUtils,
 			this.responseService)
 		router.plugIn(this.app)
-
-		morganBody(this.app)
 	}
 
 	async start(): Promise<void> {
-		this.httpServer = this.app.listen(this.config.port, () => {
-			this.logging.info(`Server is listening on port ${this.config.port}`)
+		this.httpServer = this.app.listen(this.config.server.port, () => {
+			this.logging.info(`Server is listening on port ${this.config.server.port}`)
 		})
 	}
 

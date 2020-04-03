@@ -9,6 +9,17 @@ export const Routes: Route[] = [
 		static: 'assets/*'
 	},
 	{
+		url: '*',
+		page: '*'
+	}
+]
+/*
+export const Routes: Route[] = [
+	{
+		url: '/public/*',
+		static: 'assets/*'
+	},
+	{
 		url: '/public-a/sub/*',
 		static: 'assets/*'
 	},
@@ -60,8 +71,9 @@ export const Routes: Route[] = [
 		url: '/controller/promise-chained',
 		controller: { file: 'all-response-types', function: 'promise-chained' }
 	}, {
-		url: '/params/*/:name',
+		url: '/params/:name',
 		page: '/params',
 		method: ['get', 'post']
 	}
 ]
+*/

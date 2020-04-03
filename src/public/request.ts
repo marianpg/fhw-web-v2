@@ -6,14 +6,14 @@ export type RequestBody = Record<string, any>
 export type RequestParams = { [key: string]: string } // TODO: is value always string-typed?
 export type RequestHeaders = Record<string, string>
 
-export type RequestMethod = 
-	'get' |
-	'post' |
-	'patch' |
-	'put' |
-	'delete'
 
-export const DEFAULT_METHOD: RequestMethod = 'get'
+export enum RequestMethod {
+	GET = 'get',
+	POST = 'post',
+	PATCH = 'patch',
+	PUT = 'put',
+	DELETE = 'delete'
+}
 
 export interface RequestData {
 	query: RequestQuery

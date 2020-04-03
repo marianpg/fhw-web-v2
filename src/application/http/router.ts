@@ -1,6 +1,8 @@
 'use strict'
 
-import { RequestMethod, DEFAULT_METHOD } from '../../public/request'
+import {  Config } from '../../public/config'
+import { RequestMethod, RequestData } from '../../public/request'
+import { DefaultMethod } from '../../public/route'
 
 import {
 	Express,
@@ -12,8 +14,7 @@ import {
 import express = require('express') //see https://stackoverflow.com/a/34520891
 
 import { isDefined, jsonStringify } from '../helper'
-import { Config } from '.'
-import { Logging } from '../logging'
+import { Logging, LoggingService } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 
 import { RoutesParser } from './routes-parser'
@@ -22,29 +23,72 @@ import { parseRequest } from './request'
 import { Response, checkResponse } from './response'
 import { setHeaders } from './headers'
 import { SessionService } from './session-service'
+import { isException, ExceptionType } from '../exception'
+import { Favicon } from '../response-service/favicon'
 
 
 export class Router {
-
+	private logging: Logging
 	private app: Express
 	private expRouter: ExpRouter
 
 	constructor(
 		private config: Config,
-		private logging: Logging,
+		private logService: LoggingService,
 		private fileUtils: FileUtils,
 		private responseService: ResponseService
 	) {
-		this.logging = this.logging.modify('router')
+		this.logging = logService.create('routing', this.config.routing.logging)
+	}
+
+	private logRequest(request: RequestData): void {
+		const userAgent = request.headers['user-agent'] || ''
+		const isUserAgent = userAgent.includes('fhw-web')
+		const wantsFavicon = request.originalUrl.includes('favicon')
+
+		if (!isUserAgent && !wantsFavicon) {
+			this.logging.data(
+				'Incoming Request',
+				request.method,
+				request.originalUrl,
+				jsonStringify(request.body)
+			)
+		}
+	}
+
+	private logResponse(request: RequestData, response: Response): void {
+		const userAgent = request.headers['user-agent'] || ''
+		const isUserAgent = userAgent.includes('fhw-web')
+		const wantsFavicon = request.originalUrl.includes('favicon')
+		
+		if (!isUserAgent && !wantsFavicon) {
+			this.logging.data(
+				'Sending Response',
+				request.originalUrl,
+				response.statusCode,
+				response.type
+			)
+		}
 	}
 
 	async plugIn(app: Express): Promise<void> {
 		this.app = app
 		this.app.use(async (req: ExpRequest, res: ExpResponse, next: ExpNextFunction) => {
-			if (this.config.reloadRoutesOnEveryRequest) {
-				await this.setup()
+			const request = parseRequest(req)
+			if (request.originalUrl.endsWith('favicon.ico')) {
+				const favicon = Buffer.from(Favicon, 'base64')
+				res.writeHead(200, {
+					'Content-Type': 'image/png',
+					'Content-Length': favicon.length
+				})
+				res.end(favicon)
+			} else {
+				if (this.config.routing.reloadOnEveryRequest) {
+					await this.setup()
+				}
+				this.logRequest(request)
+				this.expRouter(req, res, next)
 			}
-			this.expRouter(req, res, next)
 		})
 		await this.setup()
 	}
@@ -52,27 +96,38 @@ export class Router {
 	
 	private async setup(): Promise<void> {
 		this.expRouter = express.Router({ caseSensitive: true })
-		const routesParser = new RoutesParser(this.config, this.logging, this.fileUtils)
+		const routesParser = new RoutesParser(this.config.routing, this.logging, this.fileUtils)
 		const routes = await routesParser.parseRoutesDefinitionFile()
 
 		routes.forEach(async route => {
-			const methods: RequestMethod[] = (route as any).method || [DEFAULT_METHOD]
+			const methods: RequestMethod[] = (route as any).method || [DefaultMethod]
 			methods.forEach(async method => {
 				this.expRouter[method](route.url, async (req: ExpRequest, res: ExpResponse, next: ExpNextFunction) => {					
 					let response: Response
+					const request = parseRequest(req)
 					try {
-						const request = parseRequest(req)
-						const sessionService = new SessionService(this.config, this.fileUtils, req, res)
+						const sessionService = new SessionService(
+							this.config.sessions,
+							this.logService.create('sessions', this.config.sessions.logging),
+							this.fileUtils, req, res
+						)
 						response = await this.responseService.serve(route, request, sessionService)
 						checkResponse(response)
+						this.sendResponse(request, response, res)
 					} catch (error) {
-						response = {
-							type: 'text/html',
-							statusCode: 500,
-							html: await this.responseService.serveErrorPage(error)
+						if (isException(error)) {
+							if (error.getType() === ExceptionType.ROUTE) {
+								next()
+							}
+						} else {
+							response = {
+								type: 'text/html',
+								statusCode: 500,
+								html: await this.responseService.serveErrorPage(error)
+							}
+							this.sendResponse(request, response, res)
 						}
 					}
-					this.sendResponse(response, res)
 				})
 			})
 		})
@@ -84,11 +139,13 @@ export class Router {
 	 * @param response FHW-Web-Response Object
 	 * @param res Express-Response Object
 	 */
-	private sendResponse(response: Response, res: ExpResponse): void {
+	private sendResponse(request: RequestData, response: Response, res: ExpResponse): void {
 		if (isDefined(response.headers)) {
 			setHeaders(res, response.headers)
 		}
 		res.status(response.statusCode)
+
+		this.logResponse(request, response)
 
 		switch(response.type) {
 			case 'empty':

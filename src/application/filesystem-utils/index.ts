@@ -15,7 +15,6 @@ export class FileUtils extends _FileUtils {
 		basePath?: string
 	) {
 		super(logging, basePath)
-		this.logging = logging.modify('filesystem')
 	}
 
 	createModuleLoader<T>(): ModuleLoader<T> {

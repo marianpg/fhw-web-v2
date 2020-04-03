@@ -2,6 +2,7 @@
 
 import { RequestMethod } from "./request"
 
+export const DefaultMethod: RequestMethod = RequestMethod.GET
 
 interface RouteBasic {
 	url: string

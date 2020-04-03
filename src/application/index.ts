@@ -1,7 +1,8 @@
 'use strict'
 
-import { Config } from './config'
-import { Logging } from './logging'
+import { Config } from '../public/config'
+
+import { LoggingService } from './logging'
 import { FileUtils } from './filesystem-utils'
 
 import { Server } from './http'
@@ -12,7 +13,6 @@ import { RenderEngine } from './render-engine'
 import { Validator } from './validator'
 import { DatabaseService } from './database'
 
-export { Config, parseConfig } from './config'
 
 
 export class Application {
@@ -20,11 +20,9 @@ export class Application {
 
 	constructor(
 		private config: Config,
-		private logging: Logging,
+		private logService: LoggingService,
 		private fileUtils: FileUtils
-	) {
-		this.logging = this.logging.modify('app')
-	}
+	) {	}
 
 	async start(): Promise<void> {
 		await this.buildServer()
@@ -39,25 +37,40 @@ export class Application {
 
 	private async buildServer(): Promise<void> {
 		const renderEngine = await new RenderEngine(
-			this.config.renderer, this.logging, this.fileUtils
+			this.config.templating,
+			this.logService.create('templating', this.config.templating.logging),
+			this.fileUtils
 		).build()
 
-		const request = new Request(this.config, this.logging)
+		const request = new Request(
+			this.config.server,
+			this.logService.create('server', this.config.server.logging)
+		)
 
 		const validator = new Validator(
-			this.config.validator, this.logging, this.fileUtils,
+			this.config.templating,
+			this.logService.create('validation', this.config.templating.logging),
+			this.fileUtils,
 			request
 		)
 
-		const databaseService = await new DatabaseService(this.config.database, this.logging, this.fileUtils).build()
+		const databaseService = await new DatabaseService(
+			this.config.database,
+			this.logService.create('database', this.config.database.logging),
+			this.fileUtils
+		).build()
 		
 		const responseService = await new ResponseService(
-			this.config, this.logging, this.fileUtils,
+			this.config.routing,
+			this.logService.create('routing', this.config.routing.logging),
+			this.fileUtils,
 			renderEngine, validator, databaseService
 		).build()
 
 		this.server = new Server(
-			this.config.server, this.logging, this.fileUtils,
+			this.config,
+			this.logService,
+			this.fileUtils,
 			responseService
 		)
 

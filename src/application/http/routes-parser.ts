@@ -1,9 +1,9 @@
 'use strict'
 
+import { RoutingConfig } from '../../public/config'
 import { Route } from '../../public/route'
 
 import { isDefined } from '../helper'
-import { Config } from '.'
 import { Logging } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 
@@ -18,7 +18,7 @@ export class RoutesParser {
 	}
 
 	constructor(
-		private config: Config,
+		private config: RoutingConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils
 	) {
@@ -44,7 +44,7 @@ export class RoutesParser {
 			return parseRoutes(json)
 		}
 
-		if (this.config.magicRoutes) {
+		if (this.config.magic) {
 			return MagicRoutes
 		} else {
 			throw new Error('Es wurde keine Routen-Definitionsdatei gefunden; die ist erforderlich, da die "MagicRoutes"-Konfiguration deaktiviert ist.')

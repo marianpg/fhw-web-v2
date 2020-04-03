@@ -1,5 +1,6 @@
 'use strict'
 
+import { RoutingConfig } from '../../public/config'
 import {
 	Route,
 	StaticRoute,
@@ -12,7 +13,6 @@ import { RequestData } from '../../public/request'
 import { Session, SessionData } from '../../public/session'
 import { Database } from '../../public/database'
 
-import { Config } from '..'
 import { Logging } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 
@@ -39,7 +39,8 @@ import {
 	isFragmentResult
 } from './controller-service'
 import { isPromise } from '../helper'
-import { SessionService } from '../http/session-service'
+import { SessionService } from '../http'
+import { RouteException } from '../exception'
 
 
 export class ResponseService {
@@ -47,7 +48,7 @@ export class ResponseService {
 	private controllerService: ControllerService
 
 	constructor(
-		private config: Config,
+		private config: RoutingConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils,
 		private renderEngine: RenderEngine,
@@ -80,7 +81,6 @@ export class ResponseService {
 				// TODO: double check when this happens
 				response = {type: 'empty', statusCode: 200}
 			}
-			console.log('########################', request)
 			await sessionService.closeSession()	
 		}
 
@@ -95,9 +95,8 @@ export class ResponseService {
 	async serveStatic(route: StaticRoute, request: RequestData): Promise<ResponseStatic> {
 		const relativePath = determineFilepath(route.static, request.params)
 		const fullPath = this.fileUtils.fullPath(relativePath)
-
-		if (!await this.fileUtils.exist(fullPath)) {
-			throw new Error(`Can not find file on filesystem: ${fullPath}`)
+		if (!await this.fileUtils.fileExist(fullPath)) {
+			throw RouteException.NotFound(`The searched path is not a file or does not exist on filesystem: "${fullPath}"`)
 		}
 
 		return { type: 'static', statusCode: 200, pathToFile: fullPath }
@@ -139,7 +138,7 @@ export class ResponseService {
 	}
 
 	async serveController(route: ControllerRoute, globalData: GlobalData, request: RequestData, session: Session): Promise<Response> {
-		if (this.config.server.reloadRoutesOnEveryRequest) {
+		if (this.config.reloadOnEveryRequest) {
 			this.controllerService = await this.controllerService.build()
 		}
 

@@ -1,16 +1,14 @@
 'use strict'
 
+import { DatabaseConfig } from '../../public/config'
 import { Database as IDatabase, SqlStatementResult, JsonData } from '../../public/database'
 
 import { isDefined } from '../helper'
 
-import { Config } from './config'
 import { Logging } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 import { GlobalData } from '../../public/global'
 
-
-export { Config, parseConfig } from './config'
 
 // import sequelize
 
@@ -41,12 +39,10 @@ export class DatabaseService {
 	private globalData: GlobalData
 
 	constructor(
-		private config: Config,
+		private config: DatabaseConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils
-	) {
-		this.logging = this.logging.modify('database')
-	}
+	) {	}
 
 	async build(): Promise<DatabaseService> {
 		this.load()
@@ -86,7 +82,7 @@ export class DatabaseService {
 	}
 
 	async executeSql(sql: string): Promise<SqlStatementResult> {
-		if (!this.config.useSql) {
+		if (!this.config.sql) {
 			this.logging.info('Attempted execution of a SQL Statement, but "useSql" option in application configuration is deactivated. Statement has not been executed.')
 			return [ false, null, null ]
 		} else {
@@ -98,7 +94,10 @@ export class DatabaseService {
 	}
 
 	private async loadGlobalData(): Promise<void> {
-		this.globalData = await this.fileUtils.readJson<Record<string, any>>('global')
+		const fileExists = await this.fileUtils.exist('global.json')
+		this.globalData = fileExists
+			? await this.fileUtils.readJson<Record<string, any>>('global')
+			: {}
 	}
 
 	async load(): Promise<void> {

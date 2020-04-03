@@ -1,10 +1,19 @@
 'use strict'
 
+import { Config } from '../src/public/config'
+
 import { FHWedelWebInterface } from '../src'
-import { Config, parseConfig } from '../src/application'
+import { parseConfig } from '../src/application/config'
 import { Application } from  '../src/application'
 import { FileUtils } from  '../src/application/filesystem-utils'
-import { Logging } from  '../src/application/logging'
+import { Logging, LoggingService } from  '../src/application/logging'
+
+type RecursivePartial<T> = {
+	[P in keyof T]?:
+	T[P] extends (infer U)[] ? RecursivePartial<U>[] :
+	T[P] extends object ? RecursivePartial<T[P]> :
+	T[P]
+}
 
 export class FHWedelWeb implements FHWedelWebInterface {
 	
@@ -13,19 +22,38 @@ export class FHWedelWeb implements FHWedelWebInterface {
 	private app: Application
 	
 	constructor(
-		config: Config,
-		projectDirectory: string
+		config?: RecursivePartial<Config>
 	) {
-		this.config = parseConfig(config)
-		this.logging = new Logging('fh-wedel-web', this.config.logging)
+		try {
+			this.config = parseConfig(config)
+			const shouldLog = this.config.server.logging
 
-		const fileUtils = new FileUtils(this.logging, projectDirectory)
-		this.app = new Application(this.config, this.logging, fileUtils)
+			const logService = new LoggingService(this.config.loggingActive)
+			this.logging = logService.create('server', shouldLog)
+
+			const fileUtils = new FileUtils(
+				logService.create('filesystem', shouldLog),
+				this.config.rootPath
+			)
+
+			this.app = new Application(this.config, logService, fileUtils)
+			
+		} catch (e) {
+			this.logging.error('#######', 'FATAL [new]')
+			this.logging.error(e)
+			this.logging.error('#######', 'FATAL END')
+		}
 	}
 
 
 	async start(): Promise<void> {
-		await this.app.start()
+		try {
+			await this.app.start()
+		} catch (e) {
+			this.logging.error('#######', 'FATAL [start]')
+			this.logging.error(e)
+			this.logging.error('#######', 'FATAL END')
+		}
 	}
 
 	async stop(): Promise<void> {

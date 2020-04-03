@@ -1,6 +1,10 @@
 # gui
 .vscode
 
+# Data Files
+sessions/*.json
+data/*.json
+
 # Logs
 logs
 *.log

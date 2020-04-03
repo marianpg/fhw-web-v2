@@ -1,7 +1,7 @@
 'use strict'
 
-import { RequestMethod, DEFAULT_METHOD, RequestParams } from '../public/request'
-import { Route, StaticRoute, PageRoute, ControllerRoute } from '../public/route'
+import { RequestMethod, RequestParams } from '../public/request'
+import { Route, StaticRoute, PageRoute, ControllerRoute, DefaultMethod } from '../public/route'
 
 import { isDefined, jsonStringify, isArray, isInteger } from './helper'
 import { parseMethod } from './http'
@@ -29,7 +29,7 @@ const parseRouteMethod = (obj: Record<string, any>): RequestMethod[] => {
 		throw new Error(`Bei einer Route ist die Deklaration des "method" Attributs fehlerhaft. Angegeben werden muss eine Liste von HTTP-Methoden: ${toString(obj)}`)
 	}
 	const methods: RequestMethod[] = !isDefined(obj.method)
-		? [DEFAULT_METHOD]
+		? [DefaultMethod]
 		: obj.method.map(m => parseMethod(m))
 
 	return methods
@@ -89,10 +89,6 @@ export const parseRoutes = (json: Record<string, any>[]): Route[] => {
 	)
 }
 
-
-export const MagicRoutes: Route[] = []
-
-
 export const isStaticRoute = (route: Route): route is StaticRoute => {
 	return isDefined((route as StaticRoute).static)
 }
@@ -114,3 +110,15 @@ export const determineFilepath = (routePath: string, params: RequestParams): str
 
 	return result
 }
+
+
+export const MagicRoutes: Route[] = [
+	{
+		url: '/*',
+		static: '*'
+	},
+	{
+		url: '/*',
+		page: '*'
+	}
+]

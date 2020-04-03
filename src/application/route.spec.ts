@@ -118,7 +118,7 @@ describe('Route', () => {
 			const json = [{ url: '/test', page: 'test', method: ['get'] }]
 			try {
 				const route: PageRoute = parseRoutes(json)[0] as PageRoute
-				const method: RequestMethod = 'get'
+				const method = RequestMethod.GET
 				expect(route.method[0]).to.equal(method)
 			} catch(_) {
 				expect(false).to.be.true
@@ -128,7 +128,7 @@ describe('Route', () => {
 			const json = [{ url: '/test', page: 'test', method: ['GET'] }]
 			try {
 				const route: PageRoute = parseRoutes(json)[0] as PageRoute
-				const method: RequestMethod = 'get'
+				const method = RequestMethod.GET
 				expect(route.method[0]).to.equal(method)
 			} catch(_) {
 				expect(false).to.be.true
@@ -138,7 +138,7 @@ describe('Route', () => {
 			const json = [{ url: '/test', page: 'test', method: ['GeT'] }]
 			try {
 				const route: PageRoute = parseRoutes(json)[0] as PageRoute
-				const method: RequestMethod = 'get'
+				const method = RequestMethod.GET
 				expect(route.method[0]).to.equal(method)
 			} catch(_) {
 				expect(false).to.be.true

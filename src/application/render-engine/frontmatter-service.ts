@@ -1,6 +1,7 @@
 'use strict'
 
-import { RequestData, DEFAULT_METHOD } from "../../public/request"
+import { RequestData } from "../../public/request"
+import { DefaultMethod } from "../../public/route"
 import { Frontmatter, PageData } from "../../public/frontmatter"
 import { GlobalData } from '../../public/global'
 import { SessionData } from '../../public/session'
@@ -28,7 +29,7 @@ export class FrontmatterService {
 			page: {},
 			request: {
 				query: {}, body: {}, params: {},
-				method: DEFAULT_METHOD, path: '',
+				method: DefaultMethod, path: '',
 				originalUrl: '', ip: '', headers: {} },
 			session: { id: '' }
 		}

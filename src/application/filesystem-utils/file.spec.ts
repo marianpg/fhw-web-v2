@@ -10,8 +10,8 @@ const fileUtils = new FileUtils(new FakeLogging)
 
 describe('listFiles', () => {
 	it('recursively', async () => {
-		const paths = await fileUtils.listFiles({})
-		const pathsRec = await fileUtils.listFiles({ recursively: true })
+		const paths = await fileUtils.listFiles({ directory: '', recursively: false })
+		const pathsRec = await fileUtils.listFiles({ directory: '', recursively: true })
 	
 		expect(pathsRec.length > paths.length).to.be.true
 	})

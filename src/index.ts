@@ -1,7 +1,9 @@
 'use strict'
 
-import { Config, parseConfig } from './application/config'
-import { Logging } from './application/logging'
+import { Config } from './public/config'
+
+import { parseConfig } from './application/config'
+import { LoggingService, Logging } from './application/logging'
 import { Application } from './application'
 import { FileUtils } from './application/filesystem-utils'
 
@@ -19,12 +21,19 @@ export class FHWedelWeb implements FHWedelWebInterface {
 	private app: Application
 
 	constructor(
-		config?: Config
+		config?: RecursivePartial<Config>
 	) {
 		this.config = parseConfig(config)
-		this.logging = new Logging('fhwedel-web', this.config.logging)
-		const fileUtils = new FileUtils(this.logging)
-		this.app = new Application(this.config, this.logging, fileUtils)
+		const shouldLog = this.config.server.logging
+
+		const logService = new LoggingService(this.config.loggingActive)
+		this.logging = logService.create('server', shouldLog)
+
+		const fileUtils = new FileUtils(
+			logService.create('filesystem', shouldLog),
+			this.config.rootPath
+		)
+		this.app = new Application(this.config, logService, fileUtils)
 	}
 
 	async start(): Promise<void> {

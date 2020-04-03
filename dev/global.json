@@ -1,6 +1,6 @@
 {
 	"title": "Headhunter",
-	"style": "/public/main.css",
+	"style": "/assets/main.css",
 	"links": [
 	  { "name": "Startseite", "ressource": "/" },
 	  { "name": "Tine M.", "ressource": "tine-m" },

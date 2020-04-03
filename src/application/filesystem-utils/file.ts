@@ -15,12 +15,10 @@ export class FileUtils {
 
 	constructor(
 		protected logging: Logging,
-		private basePath?: string
+		private basePath: string
 	) {
 		const processPath = process.cwd()
-		if (!isDefined(basePath)) {
-			this.basePath = processPath
-		} else if (!basePath.includes(processPath)) {
+		if (!basePath.includes(processPath)) {
 			this.basePath = path.join(processPath, basePath)
 		}
 	}
@@ -54,6 +52,26 @@ export class FileUtils {
 			await fsp.stat(this.fullPath(filename, relativePath))
 			return true
 		} catch(err) {
+			return false
+		}
+	}
+
+	async fileExist(filename: string, relativePath?: string): Promise<boolean> {
+		try {
+			const pathToFile = this.fullPath(filename, relativePath)
+			const stats = await fsp.stat(pathToFile)
+			return stats.isFile()
+		} catch(_e) {
+			return false
+		}
+	}
+
+	async isDirectory(filename: string, relativePath?: string): Promise<boolean> {
+		try {
+			const pathToFile = this.fullPath(filename, relativePath)
+			const stats = await fsp.stat(pathToFile)
+			return stats.isDirectory()
+		} catch(_e) {
 			return false
 		}
 	}
@@ -116,7 +134,7 @@ export class FileUtils {
 		}
 	}
 
-	async listFiles({ directory, recursively = false}: {
+	async _listFiles({ directory, recursively = false}: {
 			directory?: string,
 			recursively?: boolean
 		}): Promise<string[]> {
@@ -140,11 +158,27 @@ export class FileUtils {
 		return paths.flat()
 	}
 
+	async listFiles({ directory, recursively = false}: {
+			directory: string,
+			recursively?: boolean
+		}): Promise<string[]> {
+		const folderExists = await this.exist(directory)
+		return folderExists
+			? this._listFiles({ directory, recursively })
+			: []
+	}
+
 	parsePath(aPath: string): { path: string, file: string} {
 		const { dir, base } = path.parse(aPath)
 		return {
 			path: dir,
 			file: base
 		}
+	}
+
+	hasExtension(aPath: string): boolean {
+		const { ext } = path.parse(aPath)
+		
+		return isDefined(ext) && ext.length > 0
 	}
 }

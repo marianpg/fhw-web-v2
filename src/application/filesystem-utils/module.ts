@@ -67,7 +67,11 @@ export class ModuleLoader<T> {
 		return m.exports;
 	}
 
-	async openModules(parseModuleExports: ModuleExportsParser<T>, directory: string, recursively: boolean = true): Promise<DynamicModule<T>[]> {
+	private async _openModules(
+		parseModuleExports: ModuleExportsParser<T>,
+		directory: string,
+		recursively: boolean = true
+	): Promise<DynamicModule<T>[]> {
 		const modulenames = await this.listModules(directory, recursively)
 		const allModuleNames = [...modulenames[ModuleExtension.JS], ...modulenames[ModuleExtension.TS]]
 
@@ -86,5 +90,16 @@ export class ModuleLoader<T> {
 				return result
 			})	
 		return modules
+	}
+
+	async openModules(
+		parseModuleExports: ModuleExportsParser<T>,
+		directory: string,
+		recursively: boolean = true
+	): Promise<DynamicModule<T>[]> {
+		const folderExists = await this.fileUtils.exist(directory)
+		return folderExists
+			? this._openModules(parseModuleExports, directory, recursively)
+			: []
 	}
 }

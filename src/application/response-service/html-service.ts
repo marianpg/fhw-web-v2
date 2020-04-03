@@ -1,11 +1,12 @@
 'use strict'
 
+import { RoutingConfig } from '../../public/config'
+
 import { GlobalData } from '../../public/global'
 import { RequestData, RequestParams } from '../../public/request'
 import { SessionData } from '../../public/session'
 import { PageRoute } from '../../public/route'
 
-import { Config } from '..'
 import { Logging } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 
@@ -17,7 +18,7 @@ import { determineFilepath } from '../route'
 export class HtmlService {
 
 	constructor(
-		private config: Config,
+		private config: RoutingConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils,
 		private renderEngine: RenderEngine,
@@ -40,7 +41,7 @@ export class HtmlService {
 	}
 
 	private async shouldReloadRenderer(): Promise<void> {
-		if (this.config.renderer && this.config.renderer.reloadRendererOnEveryRequest) {
+		if (this.config.reloadOnEveryRequest) {
 			await this.renderEngine.build()
 		}
 	}

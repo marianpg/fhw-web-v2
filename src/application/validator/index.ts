@@ -1,6 +1,6 @@
 'use strict'
 
-import { Config } from './config'
+import { TemplatingConfig } from '../../public/config'
 import { Logging } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 
@@ -11,7 +11,6 @@ import { ReferencedCss, Validation } from './types'
 import { TransformValidation } from './transform-validation'
 
 
-export { Config, parseConfig } from './config'
 export { Validation, NuValidation, ValidationResult } from './types'
 
 
@@ -20,7 +19,7 @@ export class Validator {
 	private transformer: TransformValidation
 
 	constructor(
-		private config: Config,
+		private config: TemplatingConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils,
 		private request: Request
@@ -43,7 +42,7 @@ export class Validator {
 		return htmlWithStyles
 	}
 
-	async injectLinkedCss(html): Promise<string> {
+	private async injectLinkedCss(html): Promise<string> {
 		const inlineCss = await this.cssParser.fetchInlineStyles(html)
 		const linkedCss = await this.cssParser.fetchLinkedStyles(html)
 		const allStyles = [...inlineCss, ...linkedCss]
@@ -54,7 +53,7 @@ export class Validator {
 		return htmlWithAllStylesInline
 	}
 
-	async validate(html: string): Promise<Validation> {		
+	private async _validate(html: string): Promise<Validation> {		
 		const htmlWithAllStylesInline = await this.injectLinkedCss(html)
 		
 		try {
@@ -63,5 +62,11 @@ export class Validator {
 		} catch (error) {
 			this.logging.error('Validation-Request failed', error)
 		}
-	}	
+	}
+
+	async validate(html: string): Promise<Validation> {
+		return this.config.validation
+			? await this._validate(html)
+			: { results: [], html }
+	}
 }

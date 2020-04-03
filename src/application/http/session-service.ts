@@ -1,5 +1,6 @@
 'use strict'
 
+import { SessionsConfig } from '../../public/config'
 import { Session as ISession, SessionData, SessionMeta } from '../../public/session'
 
 import {
@@ -10,7 +11,7 @@ import { isDefined, now, PaddedCounter } from '../helper'
 
 import { v4 as uuidv4 } from 'uuid'
 import { FileUtils } from '../filesystem-utils/file'
-import { Config } from '.'
+import { Logging } from '../logging'
 
 type SessionFile = {
 	id: string,
@@ -66,7 +67,8 @@ export class SessionService {
 	private session: ISession
 
 	constructor(
-		private config: Config,
+		private config: SessionsConfig,
+		private logging: Logging,
 		private fileUtils: FileUtils,
 		private req: ExpRequest,
 		private res: ExpResponse
@@ -122,14 +124,14 @@ export class SessionService {
 	}
 
 	async closeSession(): Promise<void> {
-		if (this.config.withSessions) {
+		if (this.config.active) {
 			await this.writeSession()
 			this.res.cookie('session-id', this.session.getId())
 		}
 	}
 
 	async getSession(url: string): Promise<ISession> {
-		if (this.config.withSessions) {
+		if (this.config.active) {
 			this.session = await this.openSession(url)
 		} else {
 			this.session = new EmptySession()

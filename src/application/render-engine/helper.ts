@@ -1,12 +1,12 @@
 'use strict'
 
+import { TemplatingConfig } from '../../public/config'
 import { Helper } from '../../public/helper'
 
 import Handlebars = require('handlebars') //see https://stackoverflow.com/a/34520891
 import { CollisionCheck, isFunction } from '../helper'
 
 import { Logging } from '../logging'
-import { Config } from './config'
 import { FileUtils, ModuleLoader, ModuleExportsParser } from '../filesystem-utils'
 
 
@@ -14,7 +14,7 @@ export class HelpersRegistration {
 	private moduleLoader: ModuleLoader<Helper>
 
 	constructor(
-		private config: Config,
+		private config: TemplatingConfig,
 		private logging: Logging,
 		private fileUtils: FileUtils
 	) {
@@ -52,7 +52,7 @@ export class HelpersRegistration {
 				
 				hbs.registerHelper(functionsName, (...args: any[]) => {
 					args.pop() //last argument contains an options object, we do not need it here
-					return _function(...args)
+					return new hbs.SafeString(_function(...args))
 				})
 			})
 		})		
