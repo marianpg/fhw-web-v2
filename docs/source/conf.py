@@ -42,6 +42,9 @@ exclude_patterns = []
 # see https://stackoverflow.com/a/56448499
 master_doc = 'index'
 
+locale_dirs = [
+    'locales/',
+]
 
 # -- Options for HTML output -------------------------------------------------
 
