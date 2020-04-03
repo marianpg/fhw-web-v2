@@ -42,9 +42,17 @@ exclude_patterns = []
 # see https://stackoverflow.com/a/56448499
 master_doc = 'index'
 
+
+# -- Localization ------------------------------------------------------------
+
 locale_dirs = [
     'locales/',
 ]
+
+# see https://docs.readthedocs.io/en/stable/guides/manage-translations.html#create-translatable-files
+gettext_uuid = True
+gettext_compact = False
+
 
 # -- Options for HTML output -------------------------------------------------
 

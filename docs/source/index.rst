@@ -6,10 +6,34 @@
 Welcome to FHW Web's documentation!
 ===================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+Lorem Ipsum.
 
+
+First Steps
+===========
+
+Lorem Ipsum
+
+.. toctree::
+	:maxdepth: 2
+	:hidden:
+	:caption: First Steps
+
+	intro/one
+	intro/two
+
+
+Help
+====
+
+Lorem Ipsum
+
+.. toctree::
+	:maxdepth: 2
+	:hidden:
+	:caption: Contact
+	
+	help
 
 
 Indices and tables
