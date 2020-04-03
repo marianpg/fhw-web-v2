@@ -1,6 +1,6 @@
 'use strict'
 
-import { RequestMethod } from "./request"
+import { RequestMethod } from './request'
 
 export const DefaultMethod: RequestMethod = RequestMethod.GET
 

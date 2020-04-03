@@ -64,7 +64,7 @@ export class ModuleLoader<T> {
 		const Module: any = module.constructor
 		const m = new Module() //note: this expression, in fact, is constructable
 		m._compile(content, filename)
-		return m.exports;
+		return m.exports
 	}
 
 	private async _openModules(

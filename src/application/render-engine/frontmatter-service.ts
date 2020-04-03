@@ -1,12 +1,12 @@
 'use strict'
 
-import { RequestData } from "../../public/request"
-import { DefaultMethod } from "../../public/route"
-import { Frontmatter, PageData } from "../../public/frontmatter"
+import { RequestData } from '../../public/request'
+import { DefaultMethod } from '../../public/route'
+import { Frontmatter, PageData } from '../../public/frontmatter'
 import { GlobalData } from '../../public/global'
 import { SessionData } from '../../public/session'
 
-import { isDefined } from "../helper"
+import { isDefined } from '../helper'
 
 
 

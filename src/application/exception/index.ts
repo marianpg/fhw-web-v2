@@ -1,6 +1,6 @@
 'use strict'
 
-import { isDefined } from "../helper"
+import { isDefined } from '../helper'
 
 export enum ExceptionType {
 	ROUTE = 'route'

@@ -1,8 +1,8 @@
 'use strict'
 
-import { GlobalData } from "./global"
-import { RequestData } from "./request"
-import { SessionData } from "./session"
+import { GlobalData } from './global'
+import { RequestData } from './request'
+import { SessionData } from './session'
 
 
 export type PageData = Record<string, any>
