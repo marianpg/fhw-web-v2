@@ -6,7 +6,7 @@ sessions/*.json
 data/*.json
 
 # Documentation Build Data
-docs/_build
+docs/build
 
 # Logs
 logs
