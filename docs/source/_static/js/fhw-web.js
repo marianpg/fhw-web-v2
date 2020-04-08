@@ -43,7 +43,6 @@ const getStyleString = () => `
 	height: var(--nav-height);
 	padding: 0.5em 1em;
 	display: flex;
-	align-items: center;
 }
 
 .menu-icon::before {
