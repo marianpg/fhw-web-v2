@@ -1,4 +1,0 @@
-Site One
-========
-
-Lorem Ipsum.

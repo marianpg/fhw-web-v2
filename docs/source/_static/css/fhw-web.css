@@ -1,0 +1,20 @@
+:root {
+	--fhw-highlight-01: #f2f5d5;
+	--fhw-highlight-02: #d5f5d8;
+	--fhw-highlight-03: #d8d5f5;
+	--fhw-highlight-04: #f5d5f2;
+}
+
+.fhw-highlight-01 {
+	background-color: var(--fhw-highlight-01);
+}
+.fhw-highlight-02 {
+	background-color: var(--fhw-highlight-02);
+}
+
+.fhw-highlight-03 {
+	background-color: var(--fhw-highlight-03);
+}
+.fhw-highlight-04 {
+	background-color: var(--fhw-highlight-04);
+}
