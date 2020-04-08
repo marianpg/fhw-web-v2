@@ -25,12 +25,4 @@ Lorem Ipsum. Übersicht der beiden Kapitel.
 	/developer-documentation/index
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
 .. include:: /manual/index.rst
