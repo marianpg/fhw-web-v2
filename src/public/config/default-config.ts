@@ -1,7 +1,10 @@
 'use strict'
 
-import { Config, Languages, LoggingTypes, RoutingFileExtensions } from '.'
+import { Config } from '.'
+import { Languages } from './languages'
 import { FrontmatterType } from '../frontmatter'
+import { LoggingTypes } from './logging-types'
+import { RoutingFileExtensions } from './routing-config'
 
 
 export const DefaultConfig: Config = {

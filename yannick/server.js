@@ -14,7 +14,7 @@ const config = {
 		magic: true
 	},
 	sessions: {
-		active: true
+		active: false
 	}
 }
 
