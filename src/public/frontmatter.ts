@@ -9,7 +9,7 @@ export type PageData = Record<string, any>
 
 export enum FrontmatterType {
 	JSON = 'json',
-	TS = 'ts'
+	YAML = 'yaml'
 }
 
 export interface Frontmatter {

@@ -21,23 +21,23 @@ import { ErrorBannerTemplate } from './templates/error-banner-template.hbs'
 import { AnyErrorTemplate } from './templates/any-error-template.hbs'
 import { ValidationErrorTemplate } from './templates/validation-error-template.hbs'
 import { isException, RouteException } from '../exception'
+import { DatabaseService } from '../database'
+import { TemplateFileService, TemplateFile, TemplateType } from './template-file-service'
 
-
-export enum RenderType {
-	PAGE = 'PAGE',
-	TEMPLATE = 'TEMPLATE'
-}
 
 export class RenderEngine {
 	private hbs: typeof Handlebars
 	private helpers: HelpersRegistration
+	private templateFileService: TemplateFileService
 
 	constructor(
 		private config: TemplatingConfig,
 		private logging: Logging,
-		private fileUtils: FileUtils
+		private fileUtils: FileUtils,
+		private databaseService: DatabaseService
 	) {
 		this.helpers = new HelpersRegistration(this.config, this.logging, this.fileUtils)
+		this.templateFileService = new TemplateFileService(this.config, this.fileUtils, this.databaseService)
 	}
 
 	async build(): Promise<RenderEngine> {
@@ -51,64 +51,9 @@ export class RenderEngine {
 		this.helpers.registerCustomHelpers(this.hbs)
 	}
 
-	private async findExtension(fullPath: string): Promise<string> {
-		const acceptedExtensions = await Promise.all(this.config.allowedExtensions.map(
-			async (ext) => {
-				return await this.fileUtils.exist(`${fullPath}.${ext}`)
-			}
-		))
-		if (acceptedExtensions.indexOf(true) === -1) {
-			throw new Error(`Can not find file on filesystem with any of the valid file extensions(${this.config.allowedExtensions}): ${fullPath}`)
-		}
-		const extension = this.config.allowedExtensions[acceptedExtensions.indexOf(true)]
-
-		return extension
-	}
-
-	private async readFile(pagePath: string): Promise<string> {
-		const path = this.fileUtils.fullPath(pagePath)
-		const fullPath = await this.fileUtils.isDirectory(path)
-			? this.fileUtils.join(path, 'index')
-			: path
+	private async _render(file: TemplateFile, contentHtml?: string): Promise<string> {
+		const frontmatter = file.getFrontmatter()
 		
-		const filepath = this.fileUtils.hasExtension(fullPath)
-			? fullPath
-			: `${fullPath}.${await this.findExtension(fullPath)}`
-
-		if (!await this.fileUtils.fileExist(filepath)) {
-			throw RouteException.NotFound(`Can not find requested file: ${filepath}`)
-		}
-		const file = await this.fileUtils.readFile(filepath)
-
-		return file
-	}
-
-	private async readPage(filePath: string): Promise<string> {
-		const pagePath = this.fileUtils.join('pages', filePath)
-		
-		return this.readFile(pagePath)
-	}
-
-	private async readTemplate(filePath: string): Promise<string> {
-		const pagePath = this.fileUtils.join('templates', filePath)
-		
-		return this.readFile(pagePath)
-	}
-
-	private extract(file: string): [PageData, string] {
-		const extraction = file.split('---').map(str => str.trim()).filter(str => str.length > 0)
-		if (extraction.length > 1) {
-			// TODO: Better Error Message in JSON Parse Error
-			return [ JSON.parse(extraction[0]), extraction[1] ]
-		} else {
-			return [ {}, extraction[0] ]
-		}
-	}
-
-	private async _render(file: string, parentFrontmatter: Frontmatter, contentHtml?: string): Promise<string> {
-		const [pageFrontmatter, hbs] = this.extract(file)
-		const frontmatter = FrontmatterService.Merge(parentFrontmatter, pageFrontmatter)
-
 		this.hbs.registerHelper('content', () => {
 			return new this.hbs.SafeString(contentHtml)
 		})
@@ -124,7 +69,7 @@ export class RenderEngine {
 			delete frontmatter.page.template
 		}		
 
-		const hbsTemplate = this.hbs.compile(hbs)
+		const hbsTemplate = this.hbs.compile(file.getMarkup())
 
 		// note: it's the 'promised-handlebars' api, function 'hbsTemplate' returns a promise
 		let html = await hbsTemplate(frontmatter)
@@ -137,20 +82,20 @@ export class RenderEngine {
 	}
 
 	private async _renderTemplate(filePath: string, frontmatter: Frontmatter, contentHtml?: string): Promise<string> {
-		const file = await this.readTemplate(filePath)
-		return this._render(file, frontmatter, contentHtml)		
+		const file = await this.templateFileService.build(filePath, TemplateType.TEMPLATE, frontmatter)
+		return this._render(file, contentHtml)		
 	}
 
 	async renderTemplate(filePath: string, global: GlobalData, request: RequestData, session: SessionData): Promise<string> {
-		const frontmatter = FrontmatterService.Build({ global, request, session })
-		const file = await this.readTemplate(filePath)
-		return this._render(file, frontmatter)		
+		const frontmatter = FrontmatterService.From({ global, request, session })
+		const file = await this.templateFileService.build(filePath, TemplateType.TEMPLATE, frontmatter)
+		return this._render(file)		
 	}
 
 	async renderPage(filePath: string, global: GlobalData, request: RequestData, session: SessionData): Promise<string> {
-		const frontmatter = FrontmatterService.Build({ global, request, session })
-		const file = await this.readPage(filePath)
-		return this._render(file, frontmatter)
+		const frontmatter = FrontmatterService.From({ global, request, session })
+		const file = await this.templateFileService.build(filePath, TemplateType.PAGE, frontmatter)
+		return this._render(file)
 	}
 
 	private injectErrorHtml(html: string, errorHtml: string): string {
@@ -162,26 +107,28 @@ export class RenderEngine {
 		}
 	}
 
-	private async renderError(errorHtml): Promise<string> {
-		const frontmatter: Frontmatter = FrontmatterService.Build({
+	private async renderError(errorHtml: string): Promise<string> {
+		const frontmatter: Frontmatter = FrontmatterService.From({
 			global: {
 				errorHtml
 		}})
+		const file = await this.templateFileService.from(ErrorBannerTemplate, frontmatter)
 
-		return await this._render(ErrorBannerTemplate, frontmatter)
+		return await this._render(file)
 	}
 
 	async renderAnyError(error: Error, html?: string): Promise<string> {
-		const frontmatter: Frontmatter = FrontmatterService.Build({
+		const frontmatter: Frontmatter = FrontmatterService.From({
 			global: {
 				error: {
 					name: error.name,
 					message: error.message,
 					stacktrace: error.stack
 		}}})
+		const file = await this.templateFileService.from(AnyErrorTemplate, frontmatter)
 
 		const errorHtml = await this.renderError(
-			await this._render(AnyErrorTemplate, frontmatter)
+			await this._render(file)
 		)
 
 		if (isDefined(html)) {
@@ -192,12 +139,13 @@ export class RenderEngine {
 	}
 
 	async renderValidationError(validation: Validation, html: string): Promise<string> {
-		const frontmatter: Frontmatter = FrontmatterService.Build({
+		const frontmatter: Frontmatter = FrontmatterService.From({
 			global: { validation, clientHtml: html }
 		})
+		const file = await this.templateFileService.from(ValidationErrorTemplate, frontmatter)
 
 		const errorHtml = await this.renderError(
-			await this._render(ValidationErrorTemplate, frontmatter)
+			await this._render(file)
 		)
 
 		return this.injectErrorHtml(html, errorHtml)

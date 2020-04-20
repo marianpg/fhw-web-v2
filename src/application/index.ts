@@ -36,10 +36,17 @@ export class Application {
 	}
 
 	private async buildServer(): Promise<void> {
+		const databaseService = await new DatabaseService(
+			this.config.database,
+			this.logService.create('database', this.config.database.logging),
+			this.fileUtils
+		).build()
+		
 		const renderEngine = await new RenderEngine(
 			this.config.templating,
 			this.logService.create('templating', this.config.templating.logging),
-			this.fileUtils
+			this.fileUtils,
+			databaseService
 		).build()
 
 		const request = new Request(
@@ -53,13 +60,6 @@ export class Application {
 			this.fileUtils,
 			request
 		)
-
-		const databaseService = await new DatabaseService(
-			this.config.database,
-			this.logService.create('database', this.config.database.logging),
-			this.fileUtils
-		).build()
-		
 		const responseService = await new ResponseService(
 			this.config.routing,
 			this.logService.create('routing', this.config.routing.logging),

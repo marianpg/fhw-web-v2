@@ -13,6 +13,9 @@ const fhwWeb = new FHWedelWeb({
 	},
 	sessions: {
 		active: true
+	},
+	database: {
+		sqlite: true
 	}
 })
 

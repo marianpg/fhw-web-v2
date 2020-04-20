@@ -5,6 +5,7 @@ export interface DatabaseConfig {
 	reloadOnEveryRequest: boolean
 	globalFile: string
 	path: string
-	sql: boolean
+	sqlite: boolean
+	sqliteFilename: string
 	logging: boolean
 }

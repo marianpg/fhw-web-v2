@@ -2,11 +2,11 @@
 
 import { RequestData } from '../../public/request'
 import { DefaultMethod } from '../../public/route'
-import { Frontmatter, PageData } from '../../public/frontmatter'
+import { Frontmatter, PageData, FrontmatterType } from '../../public/frontmatter'
 import { GlobalData } from '../../public/global'
 import { SessionData } from '../../public/session'
 
-import { isDefined } from '../helper'
+import { isDefined, parseJson, parseYaml } from '../helper'
 
 
 
@@ -35,7 +35,16 @@ export class FrontmatterService {
 		}
 	}
 
-	static Build(fm: MaybeFrontmatter): Frontmatter {
+	static Merge(parent: Frontmatter, page: PageData): Frontmatter {
+		return {
+			global: parent.global,
+			page: { ...parent.page, ...page },
+			request: { ...parent.request },
+			session: { ...parent.session },
+		}
+	}
+
+	static From(fm: MaybeFrontmatter): Frontmatter {
 		const empty = FrontmatterService.CreateEmpty()
 		const request: RequestData = isDefined(fm.request)
 			? {
@@ -58,25 +67,17 @@ export class FrontmatterService {
 		}
 	}
 
-	static Parse(obj?: Record<string, any>): Frontmatter {
-		if (!isDefined(obj)) {
-			return FrontmatterService.CreateEmpty()
-		} else {
-			return {
-				global: obj.global || {},
-				page: obj.page || {},
-				request: obj.request || {},
-				session: obj.session || {}
-			}
-		}
-	}
+	static FromRawString(raw: string): [Frontmatter, FrontmatterType] {
+		try {
+			const asJson = parseJson(raw)
+			return [ asJson, FrontmatterType.JSON ]
+		} catch (_) { }
 
-	static Merge(parent: Frontmatter, page: PageData): Frontmatter {
-		return {
-			global: parent.global,
-			page: { ...parent.page, ...page },
-			request: { ...parent.request },
-			session: { ...parent.session },
-		}
+		try {
+			const asYaml = parseYaml(raw)
+			return [ asYaml, FrontmatterType.YAML ]
+		} catch(_) { }
+
+		throw new Error('Invalid Frontmatter-Format!')
 	}
 }

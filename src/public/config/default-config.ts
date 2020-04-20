@@ -44,7 +44,8 @@ export const DefaultConfig: Config = {
 		reloadOnEveryRequest: true,
 		globalFile: 'global.json',
 		path: 'data',
-		sql: false,
+		sqlite: false,
+		sqliteFilename: 'database.sqlite',
 		logging: true
 	}
 }

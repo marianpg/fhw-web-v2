@@ -1,13 +1,16 @@
 'use strict'
 
 import { DatabaseConfig } from '../../public/config'
-import { Database as IDatabase, SqlStatementResult, JsonData } from '../../public/database'
+import { Database as IDatabase, SqlStatementResult, JsonData, ResultType, AllResultTypes } from '../../public/database'
 
-import { isDefined } from '../helper'
+const SqliteDatabase = require('better-sqlite3')
+
+import { isDefined, hasKeys } from '../helper'
 
 import { Logging } from '../logging'
 import { FileUtils } from '../filesystem-utils'
 import { GlobalData } from '../../public/global'
+
 
 
 // import sequelize
@@ -22,7 +25,7 @@ type JsonDataFiles = Record<Filename, Json>
 
 type LoadJsonFunction = (filename: string) => JsonData
 type SavejsonFunction = (filename: string, data: JsonData) => void
-type ExecuteSqlFunction = (sql: string) => Promise<SqlStatementResult>
+type ExecuteSqlFunction = (sql: string, params: Record<string, any>) => Promise<Record<string, any>[]>//Promise<SqlStatementResult>
 
 class Database implements IDatabase {
 	constructor(
@@ -37,6 +40,7 @@ export class DatabaseService {
 	private database: IDatabase
 	private jsonDataFiles: JsonDataFiles
 	private globalData: GlobalData
+	private sqliteDatabase: any
 
 	constructor(
 		private config: DatabaseConfig,
@@ -70,27 +74,84 @@ export class DatabaseService {
 
 		await Promise.all(
 			files.map(async (filename) => {
-				result[filename] = await this.fileUtils.readJson(filename)
+				if (filename.endsWith('.json')) {
+					result[filename] = await this.fileUtils.readJson(filename)
+				}
 			})
 		)
 
 		this.jsonDataFiles = result
 	}
 
-	private async _executeSql(sql: string): Promise<SqlStatementResult> {
-		return [ null, null, null ]
+	private async _executeSql(sql: string, params: Record<string, any>): Promise<Record<string, any>[]> {
+		const data = Object.assign({}, params.page, params.request.params, params.request.query, params.request.body)
+		const stmt = this.sqliteDatabase.prepare(sql)
+		let result = []
+		if (sql.trimLeft().toUpperCase().startsWith('SELECT')) {
+			result = stmt.all(data)
+		} else {
+			result = [stmt.run(data)]
+		}
+		
+		return result
 	}
 
-	async executeSql(sql: string): Promise<SqlStatementResult> {
-		if (!this.config.sql) {
+	async executeSql(sql: string, params: Record<string, any>): Promise<Record<string, any>[]> {
+		if (!this.config.sqlite) {
 			this.logging.info('Attempted execution of a SQL Statement, but "useSql" option in application configuration is deactivated. Statement has not been executed.')
-			return [ false, null, null ]
+			return []
 		} else {
-			return this._executeSql(sql)
+			try {
+				return await this._executeSql(sql, params)
+			} catch (e) {
+				this.logging.error('SQL Error', e)
+				return [{ error: 'SQL Error' }]
+			}
 		}
 	}
 	private async loadSqlData(): Promise<void> {
-		//FIXME
+		const path = this.fileUtils.fullPath(this.config.sqliteFilename, this.config.path)
+		this.sqliteDatabase = new SqliteDatabase(path, { verbose: console.log })
+	}
+
+	async parseAndExecuteSql(obj: Record<string, any>, params: Record<string, any>): Promise<Record<string, any>> {
+		if (!hasKeys(obj)) {
+			return obj
+		}
+
+		if (!Object.keys(obj).includes('query')) {
+			await Promise.all(Object.keys(obj).map(async key => {
+				obj[key] = await this.parseAndExecuteSql(obj[key], params)
+			}))
+			return obj
+		}
+
+		const resultType: ResultType =
+			obj['result'] && AllResultTypes.includes(obj['result'])
+				? obj['result']
+				: 'mixed'
+		
+		const sqlResult = await this.executeSql(obj['query'], params)
+
+		if (resultType === 'array') {
+			return sqlResult
+		}
+
+		const objResult = isDefined(sqlResult) && isDefined(sqlResult[0])
+			? Object.keys(sqlResult[0]).reduce(
+				(acc, key) => {
+					acc[`_${key}`] = sqlResult[0][key]
+					return acc
+				}
+				, {})
+			: {}
+
+		if (resultType === 'object') {
+			return objResult
+		}
+
+		const mixedResult = Object.assign(sqlResult, objResult)
+		return mixedResult
 	}
 
 	private async loadGlobalData(): Promise<void> {
@@ -98,6 +159,7 @@ export class DatabaseService {
 		this.globalData = fileExists
 			? await this.fileUtils.readJson<Record<string, any>>('global')
 			: {}
+		this.globalData = this.parseAndExecuteSql(this.globalData, {})
 	}
 
 	async load(): Promise<void> {

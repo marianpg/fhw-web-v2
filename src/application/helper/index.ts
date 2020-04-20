@@ -1,5 +1,7 @@
 'use strict'
 
+import YAML = require('yaml')
+
 
 export const isDefined = (a?: any) => a != null
 
@@ -14,10 +16,20 @@ export const isFunction = (functionToCheck) => {
 
 export const isPromise = (p?: any) => isDefined(p) && isDefined(p.then) && isFunction(p.then)
 
+export const hasKeys = (v: any) => typeof v === 'object' && v !== null
+
 export const xor =
 	(a: boolean, b: boolean): boolean => a ? !b : b
 
 export const jsonStringify = (obj: any, newLine?: boolean) => `${newLine ? '\n': ''}${JSON.stringify(obj, null, 4)}`
+
+export const parseJson = (raw: string) => {
+	return JSON.parse(raw)
+}
+
+export const parseYaml = (raw: string) => {
+	return YAML.parse(raw)
+}
 
 export const now = () => (new Date).toString()
 

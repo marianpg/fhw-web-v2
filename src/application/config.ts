@@ -102,7 +102,8 @@ const parseDatabaseConfig = (toVerify: any, _default: DatabaseConfig): DatabaseC
 			reloadOnEveryRequest: decide(toVerify.reloadOnEveryRequest, _default.reloadOnEveryRequest),
 			globalFile: decide(toVerify.globalFile, _default.globalFile),
 			path: decide(toVerify.path, _default.path),
-			sql: decide(toVerify.sql, _default.sql),
+			sqlite: decide(toVerify.sqlite, _default.sqlite),
+			sqliteFilename: decide(toVerify.sqliteFilename, _default.sqliteFilename),
 			logging: decide(toVerify.logging, _default.logging)
 		}
 		: _default
