@@ -96,6 +96,7 @@ export class SessionService {
 			meta: this.session.getMeta(),
 			data: this.session.getData()
 		}
+		delete file.data.id
 		return this.fileUtils.writeJson(file, this.session.getId(), 'sessions')
 	}
 	private async readSession(url: string, id: string): Promise<ISession> {

@@ -111,7 +111,7 @@ export class DatabaseService {
 	}
 	private async loadSqlData(): Promise<void> {
 		const path = this.fileUtils.fullPath(this.config.sqliteFilename, this.config.path)
-		this.sqliteDatabase = new SqliteDatabase(path, { verbose: console.log })
+		this.sqliteDatabase = new SqliteDatabase(path)//, { verbose: console.log }) //TODO: proper Logging
 	}
 
 	async parseAndExecuteSql(obj: Record<string, any>, params: Record<string, any>): Promise<Record<string, any>> {
